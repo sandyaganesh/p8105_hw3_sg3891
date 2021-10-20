@@ -165,13 +165,40 @@ ggplot(two_2006_2010, aes(x = response, y = data_value, fill = response)) +
 
 ## Question 3
 
+Load, tidy, and otherwise wrangle the data. Your final dataset should include all originally observed variables and values; have useful variable names; include a weekday vs weekend variable; and encode data with reasonable variable classes. .
+
 ```{r clean_accel}
-accel = 
-  read_csv("data/accel_data.csv")
-
-
+accel_cleaned = 
+  read_csv("./data/accel_data.csv") %>%
+  janitor::clean_names() %>% 
+  mutate(
+    day_type = ifelse(day == "Saturday" | day == "Sunday", "Weekend", "Weekday"),
+    day = factor(day, levels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+    ) %>%
+  pivot_longer(
+    cols = activity_1:activity_1440,
+    names_to = "activity_number",
+    values_to = "activity_counts",
+    names_prefix = "activity.",
+  )
 ```
 
+Describe the resulting dataset (e.g. what variables exist, how many observations, etc)
+
+Looking into this data set, we can see that the total number of observations in the accel data set is `r nrow(accel_cleaned)` observations with `r ncol(accel_cleaned)` variables. The variables in this data set include `r names(instacart %>% select(c(1,2,3,4,5,6)))`. 
 
 
+Using your tidied dataset, aggregate across minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
+
+```{r accel_daily}
+
+accel_total_daily = accel_cleaned %>% 
+  group_by(day_id) %>% 
+  summarize(total_daily_activity = sum(activity_counts)) %>%
+  select(day_id, total_daily_activity) %>% 
+  knitr::kable()
+
+accel_total_daily
+```
+Looking at the above table, it appears that the subject had very little activity on day 24 and 31. Other than that, activity appears to fluctuate throughout the 35 days, with no clear trend.
 
