@@ -163,5 +163,15 @@ ggplot(two_2006_2010, aes(x = response, y = data_value, fill = response)) +
 
 ```
 
+## Question 3
+
+```{r clean_accel}
+accel = 
+  read_csv("data/accel_data.csv")
+
+
+```
+
+
 
 
