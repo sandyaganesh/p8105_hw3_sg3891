@@ -22,5 +22,57 @@ The total number of observations in the instacart data set is `r nrow(instacart)
 
 There are `r length((pull(instacart, order_id)))` aisles, and the aisles that the most items are ordered from are `r tail(names(sort(table(pull(instacart,aisle)))), 3)`.
 
+Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+
+```{r q1_plot}
+
+aisle_df = 
+  instacart %>% 
+  count(aisle) %>% 
+  filter(n > 10000)
+
+ggplot(aisle_df, aes(x = reorder(aisle, -n), y = n)) + 
+  geom_point() + 
+  labs(
+    title = "Instacart Popular Aisles ",
+    x = "Aisle Names",
+    y = "Number of items ordered",
+    caption = "Data from the instacart dataset"
+  ) +
+  coord_flip()
+```
+
+Below is a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”, with the number of times each item is ordered.
+
+```{r table1}
+instacart %>% 
+  filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>%
+  group_by(aisle) %>% 
+  count(product_name) %>% 
+  rename(item_count = n) %>% 
+  mutate(order_count = min_rank(desc(item_count))) %>% 
+  filter(order_count < 4) %>% 
+  arrange(aisle, order_count) %>% 
+  select(aisle, product_name, item_count) %>% 
+  knitr::kable()
+```
+
+Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+
+```{r table2}
+instacart %>% 
+  filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>%
+  group_by(product_name, order_dow) %>% 
+  mutate(
+    average = mean(order_hour_of_day),
+    order_dow = recode(order_dow, "0" = "Sunday", "1" = "Monday", "2" = "Tuesday", "3" = "Wednesday", "4" = "Thursday", "5" = "Friday", "6" = "Saturday"),
+    list=factor(order_dow)
+    )%>%
+  pivot_wider(
+    names_from = order_dow,
+    values_from = average
+  ) %>% 
+  knitr::kable()
+```
 
 
