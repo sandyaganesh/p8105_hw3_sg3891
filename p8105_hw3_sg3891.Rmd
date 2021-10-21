@@ -178,7 +178,7 @@ spaghetti_df = brfss_cleaned %>%
 
 ```{r q2_spaghetti}
 ggplot(spaghetti_df, aes(x = year, y = average, color = state)) + 
-  geom_line() + 
+  geom_line(alpha = 0.6) + 
   labs(
     title = "Average value over time for all states ",
     x = "Time (years)",
@@ -187,6 +187,7 @@ ggplot(spaghetti_df, aes(x = year, y = average, color = state)) +
   )
 
 ```
+
 Looking at the spaghetti plot above, we see that over time from 2002 to 2010, there is a lot of flux in average value, with a trend of decreasing average value in general across the states.
 
 #### Question 2.3
@@ -280,5 +281,5 @@ accel_cleaned %>%
   )
 ```
 
-Looking at this graph, we can see that Friday average activity counts peak at around hour 21, while Sunday average activity seems to peak around hour 10.5. Additionally, in general there is an upward trend for activity until hour 18 across all days of the week, and after hour 18, most days see a dramatic downwards slope in terms of activity. Activity seems to subside by the end of the 24-hour period and reach its lowest point at this time.
+Looking at this graph, we can see that Friday average activity counts peak at around hour 21, while Sunday average activity seems to peak around hour 10.5. Additionally, in general there is an upward trend for activity until hour 18 across all days of the week, and after hour 18, most days see a dramatic downwards slope in terms of activity. Activity seems to subside by the end of the 24-hour period and reach its lowest point at this time for all days in the week.
 
