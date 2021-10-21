@@ -8,6 +8,22 @@ output: github_document
 ```{r setup, echo = FALSE, message = FALSE}
 library(tidyverse)
 library(p8105.datasets)
+
+knitr::opts_chunk$set(
+  fig.height = 6,
+  fig.width = 8,
+  message = F,
+  warning = F 
+  )
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
 ```
 ## Question 1
 
@@ -23,20 +39,29 @@ The code below provides the size and structure of the data, describes some key v
 
 The total number of observations in the instacart data set is `r nrow(instacart)` observations with `r ncol(instacart)` variables. Some key variables in this data set include `r names(instacart %>% select(c(1, 5, 11)))`. There are `r length(unique(pull(instacart, order_id)))` unique orders in this data set, with `r length(unique(pull(instacart, user_id)))` users placing these orders, which means that each user has placed `r round((length(unique(pull(instacart, order_id))))/length(unique(pull(instacart, user_id))), 2)` instacart order in this dataset. These orders include products such as `r pull(instacart, product_name)[1:3]`. This dataset includes orders for `r length(unique(pull(instacart, product_id)))` unique products.
 
-There are `r length(unique(pull(instacart, aisle)))` aisles, and the aisles that the most items are ordered from are `r tail(names(sort(table(pull(instacart,aisle)))), 3)`.
-
 #### Question 1.1
+There are `r length(unique(pull(instacart, aisle)))` aisles, and the aisles that the most items are ordered from are `r tail(names(sort(table(pull(instacart,aisle)))), 3)`. This can also be seen in the below code chunk and output.
 
-Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+```{r q1_aisle}
+instacart %>%
+  count(aisle) %>% 
+  arrange(desc(n))
+```
+
+
+#### Question 1.2
+
+The code chunk below produces a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered.
 
 ```{r q1_plot}
-
-aisle_df = 
-  instacart %>% 
+instacart %>% 
   count(aisle) %>% 
-  filter(n > 10000)
-
-ggplot(aisle_df, aes(x = reorder(aisle, -n), y = n)) + 
+  filter(n > 10000) %>% 
+  mutate(
+    aisle = factor(aisle),
+    aisle = fct_reorder(aisle, n)
+  ) %>%
+  ggplot(aes(x = aisle, y = n)) + 
   geom_point() + 
   labs(
     title = "Instacart Popular Aisles ",
@@ -44,10 +69,12 @@ ggplot(aisle_df, aes(x = reorder(aisle, -n), y = n)) +
     y = "Number of items ordered",
     caption = "Data from the instacart dataset"
   ) +
-  coord_flip()
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 ```
 
-#### Question 1.2
+Looking at the plot of number of items ordered in each aisle above, we can see that the majority of popular aisles have less than 20,000 items ordered. However, there are 2 aisles that standout, including fresh fruit, and fresh vegetables, which each have over 140,000 items ordered.
+
+#### Question 1.3
 
 Below is a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”, with the number of times each item is ordered.
 
@@ -56,21 +83,21 @@ instacart %>%
   filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>%
   group_by(aisle) %>% 
   count(product_name) %>% 
-  rename(item_count = n) %>% 
-  mutate(order_count = min_rank(desc(item_count))) %>% 
-  filter(order_count < 4) %>% 
-  arrange(aisle, order_count) %>% 
-  select(aisle, product_name, item_count) %>% 
+  rename(order_count = n) %>% 
+  mutate(rank = min_rank(desc(order_count))) %>% 
+  filter(rank < 4) %>% 
+  arrange(aisle, rank) %>% 
   knitr::kable()
 ```
+From the table above, we can see that the most ordered products in the baking ingredients aisle include light brown sugar, pure baking soda, and cane sugar. There are much fewer orders within the dog food care aisle (less than 1/10th of the orders in the baking ingredients aisle). The most ordered packaged vegetables fruits include organic baby spinach, organic raspberries, and organic blueberries.
 
-#### Question 1.3
+#### Question 1.4
 
-Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+The code chunk below produces a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream was ordered on each day of the week.
 
 ```{r table2, warning = FALSE}
 instacart %>% 
-  filter(product_name == "Pink Lady Apples" | product_name =="Coffee Ice Cream") %>%
+  filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>% 
   group_by(product_name, order_dow) %>%
   summarize(average = round(mean(order_hour_of_day), 2)) %>%
   pivot_wider(
@@ -80,13 +107,14 @@ instacart %>%
    rename( "Sunday" = "0","Monday" = "1", "Tuesday" = "2", "Wednesday" = "3", "Thursday" = "4", "Friday" = "5", "Saturday" = "6") %>% 
   knitr::kable()
 ```
+From the table above, we can see that coffee ice cream is purchased at the latest time during the week on Tuesday, and pink lady apples are ordered at the earliest time during the week on Tuesday, which is interesting.
 
 ## Question 2
 
 The following question uses the BRFSS data.
 
-#### Clean the BRFSS data
-The code chunk below cleans the data:
+#### Load and clean the BRFSS data
+The code chunk below loads and cleans the data:
 ```{r clean_brfss}
 data("brfss_smart2010")
 
@@ -114,7 +142,7 @@ brfss_cleaned %>%
   select(state)
 
 ```
-As seen above, the states observed at 7 or more locations include Connecticut, Florida, Massachusetts, North Carolina, New Jersey, and Pennsylvania.
+As seen above, the states observed at 7 or more locations in 2002 include Connecticut, Florida, Massachusetts, North Carolina, New Jersey, and Pennsylvania.
 
 In 2010, which states were observed at 7 or more locations?
 ```{r states2010}
@@ -129,22 +157,26 @@ brfss_cleaned %>%
 
 ```
 
-As seen above, the states observed at 7 or more locations include California, Colorado, Florida, Massachusetts, Maryland, North Carolina, Nebraska, New Jersey, New York, Ohio, Pennsylvania, South Carolina, Texas, and Washington.
+As seen above, the states observed at 7 or more locations in 2010 include California, Colorado, Florida, Massachusetts, Maryland, North Carolina, Nebraska, New Jersey, New York, Ohio, Pennsylvania, South Carolina, Texas, and Washington.
+
+Comparing the states observed at 7 or more locations in 2002 vs in 2010, we can see that there are many more states in 7+ locations in 2010 (14 states in 2010 vs 6 states in 2002).
 
 
 #### Question 2.2
-Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. 
+The code below produces a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state. 
 
-Additionally, make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
+It additionally generates a “spaghetti” plot of this average value over time within a state.
 
-```{r q2_spaghetti}
+```{r q2_spag_df}
 
 spaghetti_df = brfss_cleaned %>% 
   filter(response == "Excellent") %>% 
   group_by(state, year) %>% 
   summarize(average = round(mean(data_value, na.rm = TRUE), 2)) %>%
   select(year, state, average)
+```
 
+```{r q2_spaghetti}
 ggplot(spaghetti_df, aes(x = year, y = average, color = state)) + 
   geom_line() + 
   labs(
@@ -155,6 +187,8 @@ ggplot(spaghetti_df, aes(x = year, y = average, color = state)) +
   )
 
 ```
+Looking at the spaghetti plot above, we see that over time from 2002 to 2010, there is a lot of flux in average value, with a trend of decreasing average value in general across the states.
+
 #### Question 2.3
 Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
 
@@ -164,21 +198,23 @@ two_2006_2010 = brfss_cleaned %>%
   filter(year == "2006" | year == "2010") %>% 
   filter(state == "NY")
 
-ggplot(two_2006_2010, aes(x = data_value, color = response)) + 
-  geom_density() + 
+ggplot(two_2006_2010, aes(x = response, y = data_value, fill = response)) + 
+  geom_boxplot() + 
   facet_grid(. ~ year) +
   labs(
     title = "Distribution of data_value for responses in NY",
-    x = "Response",
+    x = "Responses",
     y = "data_value",
     caption = "Data from the brfss dataset"
   )
 
 ```
 
+Comparing the box plots in 2006 and 2010 for New York, it appears that the data values for Excellent and Very good responses are higher in 2010 than in 2006. There is also a lot more variability and a larger standard deviation in the Fair category distribution data value in 2010 when compared to 2006.
+
 ## Question 3
 
-Load, tidy, and otherwise wrangle the data. Your final dataset should include all originally observed variables and values; have useful variable names; include a weekday vs weekend variable; and encode data with reasonable variable classes.
+Load, tidy, and otherwise wrangle the data. The final data set includes a weekday vs weekend variable as well.
 
 #### Load and clean the accel data
 
@@ -198,6 +234,7 @@ accel_cleaned =
   )
 ```
 
+#### Describe accel data set
 Describe the resulting dataset (e.g. what variables exist, how many observations, etc)
 
 Looking into this data set, we can see that the total number of observations in the accel data set is `r nrow(accel_cleaned)` observations with `r ncol(accel_cleaned)` variables. The variables in this data set include `r names(instacart %>% select(c(1,2,3,4,5,6)))`. 
@@ -206,20 +243,42 @@ Looking into this data set, we can see that the total number of observations in 
 Using your tidied dataset, aggregate across minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
 
 ```{r accel_daily}
-
-accel_total_daily = accel_cleaned %>% 
-  group_by(day_id) %>% 
+  accel_total_daily = accel_cleaned %>% 
+  group_by(week, day) %>% 
   summarize(total_daily_activity = sum(activity_counts)) %>%
-  select(day_id, total_daily_activity) %>% 
-  knitr::kable()
-
+  pivot_wider(
+    names_from = day,
+    values_from = total_daily_activity
+  ) %>% 
+  knitr::kable(digits = 1)
 accel_total_daily
 ```
 
-Looking at the above table, it appears that the subject had very little activity on day 24 and 31. Other than that, activity appears to fluctuate throughout the 35 days, with no clear trend.
+Looking at the above table, it appears that the subject had very little activity on Saturday of Weeks 4 and 5. Other than that, activity appears to fluctuate throughout the 35 days, with no clear trend.
 
 #### Question 3.2
 
-Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
+The code chunk below produces a single-panel plot that shows the 24-hour activity time courses for each day and uses color to indicate day of the week.
 
+```{r accel_plot}
+accel_cleaned %>% 
+  mutate(activity_number = as.numeric(activity_number)) %>% 
+  group_by(day, activity_number) %>% 
+  summarize(avg_value = mean(activity_counts)) %>% 
+  ggplot(aes(x = activity_number, y = avg_value, color = day)) +
+  geom_smooth() +
+  scale_x_continuous(
+    breaks = (1:24)*60 + 1,
+    labels = c(1:24),
+    name = "Hours in each day"
+  ) + 
+  labs(
+    title = "24-hour activity time courses for each day of the week",
+    x = "Hours (activity number)",
+    y = "Average activity counts",
+    color = "Day of the Week"
+  )
+```
+
+Looking at this graph, we can see that Friday average activity counts peak at around hour 21, while Sunday average activity seems to peak around hour 10.5. Additionally, in general there is an upward trend for activity until hour 18 across all days of the week, and after hour 18, most days see a dramatic downwards slope in terms of activity. Activity seems to subside by the end of the 24-hour period and reach its lowest point at this time.
 
